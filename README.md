@@ -59,6 +59,7 @@ npm run seed:admin: Script especial de Node para crear el usuario administrador 
 
 📂 Estructura del Proyecto
 
+```text
 proyecto-agricultivo/
 ├── public/                # Archivos estáticos
 ├── scripts/               # Scripts de utilidad (ej. seed_admin)
@@ -74,6 +75,9 @@ proyecto-agricultivo/
 ├── package.json           # Dependencias y scripts del proyecto
 ├── tailwind.config.js     # Configuración de Tailwind CSS
 └── vite.config.js         # Configuración del empaquetador Vite
+  ```
+
+
 
 🤝 Contribución
 Haz un Fork del proyecto
