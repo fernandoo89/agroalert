@@ -32,17 +32,19 @@ Asegúrate de tener instalado en tu sistema local:
    ```bash
    git clone https://github.com/tu-usuario/proyecto-agricultivo.git
    cd proyecto-agricultivo
-  2. **Instalar dependencias**:
-  ```bash
-npm install
 
-Configurar Variables de Entorno: El proyecto utiliza Supabase. Necesitas crear un archivo .env en la raíz del proyecto basado en las credenciales de tu proyecto en Supabase:
-VITE_SUPABASE_URL=tu_supabase_url
-VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
-
-4. Ejecutar el servidor de desarrollo:
+2. **Instalar dependencias:** :
    ```bash
-npm run dev
+    npm install
+
+3. **Configurar Variables de Entorno: El proyecto utiliza Supabase. Necesitas crear un archivo .env en la raíz del proyecto basado en las credenciales de tu proyecto en Supabase:** :
+   ```bash
+    VITE_SUPABASE_URL=tu_supabase_url
+   VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+   
+4. **Ejecutar el servidor de desarrollo:** :
+   ```bash
+    npm run dev
 
 La aplicación estará disponible en http://localhost:5173
 
