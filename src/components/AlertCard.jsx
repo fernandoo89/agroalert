@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../js/supabase';
 import { AlertTriangle, TrendingDown, Info, Share2 } from 'lucide-react';
 
 export default function AlertCard({ alerta }) {
-  const { tipo, mensaje, fecha, cultivos } = alerta;
+  const { id, tipo, mensaje, fecha, cultivos } = alerta;
+  const [feedback, setFeedback] = useState(null);
   
   let badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
   let Icon = Info;
@@ -20,15 +23,38 @@ export default function AlertCard({ alerta }) {
     Icon = Info;
   }
 
-  const handleShare = () => {
-    const text = `⚠️ AgroAlert: ${mensaje}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
+  useEffect(() => {
+    const savedFeedback = localStorage.getItem(`feedback_alerta_${id}`);
+    if (savedFeedback) {
+      setFeedback(savedFeedback);
+    }
+  }, [id]);
+
+  const handleFeedback = async (val) => {
+    setFeedback(val);
+    localStorage.setItem(`feedback_alerta_${id}`, val);
+    
+    try {
+      await supabase.from('feedback_alertas').insert({
+        alerta_id: id,
+        es_util: val === 'si',
+        fecha: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn("No se pudo registrar el feedback en la base de datos (se guardó en local):", e);
+    }
   };
 
   const formattedDate = new Date(fecha).toLocaleDateString('es-PE', {
     year: 'numeric', month: 'short', day: 'numeric'
   });
+
+  const handleShare = () => {
+    const cropText = cultivos?.nombre ? ` en el cultivo de ${cultivos.nombre.toUpperCase()}` : '';
+    const text = `⚠️ *AgroAlert - Alerta de Mercado* ⚠️\n\nSe ha reportado una situación de *${tipoText.toUpperCase()}*${cropText}.\n\n*Mensaje:* ${mensaje}\n\n📅 _Fecha:_ ${formattedDate}\n\nConsulta precios y recomendaciones en tiempo real aquí: ${window.location.origin}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className={`p-4 rounded-xl border-2 ${badgeColor} shadow-sm bg-white`}>
@@ -49,13 +75,39 @@ export default function AlertCard({ alerta }) {
         {mensaje}
       </p>
 
-      <button 
-        onClick={handleShare}
-        className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#128C7E] transition-colors w-full justify-center sm:w-auto"
-      >
-        <Share2 className="h-4 w-4" />
-        Compartir por WhatsApp
-      </button>
+      <div className="flex flex-col gap-3">
+        <button 
+          onClick={handleShare}
+          className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2.5 rounded-lg font-bold hover:bg-[#128C7E] transition-colors w-full justify-center"
+        >
+          <Share2 className="h-5 w-5" />
+          Compartir alerta por WhatsApp
+        </button>
+
+        <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <span className="text-sm font-medium text-gray-500">¿Te sirvió esta alerta?</span>
+          {feedback ? (
+            <span className="text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200 w-fit">
+              {feedback === 'si' ? '👍 ¡Gracias! Nos alegra que sirva.' : '👎 Gracias, mejoraremos el reporte.'}
+            </span>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleFeedback('si')}
+                className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-all font-semibold"
+              >
+                👍 Sí, útil
+              </button>
+              <button
+                onClick={() => handleFeedback('no')}
+                className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all font-semibold"
+              >
+                👎 No
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
