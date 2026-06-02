@@ -8,7 +8,7 @@ export default {
     extend: {
       colors: {
         agro: {
-          primary: '#1D9E75',
+          primary: '#15825E',
           dark: '#085041',
           light: '#E1F5EE',
         }

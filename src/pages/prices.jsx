@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AlertCircle, RefreshCw, Inbox, Calendar, LayoutGrid } from 'lucide-react';
 
 export default function Prices() {
   const [cultivos, setCultivos] = useState([]);
@@ -8,14 +9,21 @@ export default function Prices() {
   const [dias, setDias] = useState(30);
   const [datosGrafica, setDatosGrafica] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Cargar cultivos para el selector
   useEffect(() => {
     async function loadCultivos() {
-      const { data } = await supabase.from('cultivos').select('id, nombre').order('nombre');
-      if (data && data.length > 0) {
-        setCultivos(data);
-        setCultivoActivo(data[0].id.toString());
+      try {
+        const { data, error: sbError } = await supabase.from('cultivos').select('id, nombre').order('nombre');
+        if (sbError) throw sbError;
+        if (data && data.length > 0) {
+          setCultivos(data);
+          setCultivoActivo(data[0].id.toString());
+        }
+      } catch (err) {
+        console.error("Error cargando cultivos:", err);
+        setError("Error al cargar la lista de cultivos. Inténtalo de nuevo.");
       }
     }
     loadCultivos();
@@ -27,57 +35,84 @@ export default function Prices() {
 
     async function loadPrecios() {
       setLoading(true);
+      setError(null);
       const fechaLimite = new Date();
       fechaLimite.setDate(fechaLimite.getDate() - dias);
 
-      const { data } = await supabase
-        .from('precios')
-        .select('*')
-        .eq('cultivo_id', cultivoActivo)
-        .gte('fecha', fechaLimite.toISOString().split('T')[0])
-        .order('fecha', { ascending: true });
+      try {
+        const { data, error: sbError } = await supabase
+          .from('precios')
+          .select('*')
+          .eq('cultivo_id', cultivoActivo)
+          .gte('fecha', fechaLimite.toISOString().split('T')[0])
+          .order('fecha', { ascending: true });
 
-      if (data) {
-        const chartData = data.map(p => ({
-          fecha: new Date(p.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }),
-          precio: parseFloat(p.precio_kg),
-          mercado: p.mercado,
-          fechaRaw: p.fecha,
-        }));
-        setDatosGrafica(chartData);
+        if (sbError) throw sbError;
+
+        if (data) {
+          const chartData = data.map(p => ({
+            fecha: new Date(p.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' }),
+            precio: parseFloat(p.precio_kg),
+            mercado: p.mercado,
+            fechaRaw: p.fecha,
+          }));
+          setDatosGrafica(chartData);
+        }
+      } catch (err) {
+        console.error("Error al cargar precios:", err);
+        setError("No pudimos actualizar el historial de precios para este cultivo. Reintenta por favor.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadPrecios();
   }, [cultivoActivo, dias]);
 
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    // Forzar recarga reiniciando el filtro
+    const active = cultivoActivo;
+    setCultivoActivo('');
+    setTimeout(() => setCultivoActivo(active), 50);
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold text-agro-dark">Historial de Precios</h1>
-        <p className="text-gray-600 mt-1">Analiza la tendencia del mercado para tomar mejores decisiones.</p>
+        <h1 className="text-3xl font-extrabold text-agro-dark tracking-tight">Historial de Precios</h1>
+        <p className="text-slate-600 mt-1">Analiza la tendencia del mercado para tomar mejores decisiones de venta y siembra.</p>
       </header>
 
       {/* Filtros */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Cultivo</label>
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-5 items-end">
+        <div className="w-full sm:w-auto">
+          <label htmlFor="filter-cultivo" className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+            <LayoutGrid className="h-4 w-4 text-agro-primary" aria-hidden="true" />
+            <span>Cultivo</span>
+          </label>
           <select 
+            id="filter-cultivo"
             value={cultivoActivo} 
             onChange={(e) => setCultivoActivo(e.target.value)}
-            className="w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-agro-primary outline-none"
+            className="w-full sm:w-56 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
           >
+            {cultivos.length === 0 && <option value="">Cargando cultivos...</option>}
             {cultivos.map(c => (
               <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Rango de tiempo</label>
+        <div className="w-full sm:w-auto">
+          <label htmlFor="filter-tiempo" className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+            <Calendar className="h-4 w-4 text-agro-primary" aria-hidden="true" />
+            <span>Rango de tiempo</span>
+          </label>
           <select 
+            id="filter-tiempo"
             value={dias} 
             onChange={(e) => setDias(Number(e.target.value))}
-            className="w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-agro-primary outline-none"
+            className="w-full sm:w-56 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
           >
             <option value={7}>Últimos 7 días</option>
             <option value={30}>Últimos 30 días</option>
@@ -86,66 +121,105 @@ export default function Prices() {
         </div>
       </div>
 
-      {/* Gráfica */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-[400px]">
-        {loading ? (
-          <div className="flex items-center justify-center h-full text-gray-500">Cargando gráfica...</div>
-        ) : datosGrafica.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={datosGrafica} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="fecha" tick={{fontSize: 12}} tickLine={false} axisLine={false} />
-              <YAxis tickFormatter={(val) => `S/ ${val}`} tick={{fontSize: 12}} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(value) => [`S/ ${value}`, 'Precio']} labelStyle={{ color: '#333', fontWeight: 'bold' }} />
-              <Legend />
-              <Line type="monotone" dataKey="precio" name="Precio (S/ por kg)" stroke="#1D9E75" strokeWidth={3} dot={{ r: 4, fill: '#1D9E75' }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            No hay datos suficientes para mostrar la gráfica de este cultivo.
-          </div>
-        )}
-      </div>
-
-      {/* Tabla de historial detallado */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">Historial Detallado</h2>
+      {/* Sección de visualización */}
+      {error ? (
+        <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center max-w-lg mx-auto" role="alert">
+          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-3" aria-hidden="true" />
+          <h2 className="text-lg font-bold text-red-950 mb-2">Error de conexión</h2>
+          <p className="text-sm text-red-800 mb-6">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm active:scale-95"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            <span>Reintentar</span>
+          </button>
         </div>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Cargando datos...</div>
-        ) : datosGrafica.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
-                <tr>
-                  <th className="px-6 py-3 text-left">Fecha</th>
-                  <th className="px-6 py-3 text-left">Precio (S/ x kg)</th>
-                  <th className="px-6 py-3 text-left">Mercado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[...datosGrafica].reverse().map((p, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-6 py-3 font-medium text-gray-800">
-                      {new Date(p.fechaRaw).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </td>
-                    <td className="px-6 py-3">
-                      <span className="font-bold text-agro-dark text-base">S/ {p.precio.toFixed(2)}</span>
-                    </td>
-                    <td className="px-6 py-3 text-gray-600">{p.mercado}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      ) : (
+        <>
+          {/* Gráfica */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-[400px]">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-4">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-agro-primary" />
+                <span className="text-slate-500 font-semibold animate-pulse">Cargando gráfica de precios...</span>
+              </div>
+            ) : datosGrafica.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={datosGrafica} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="fecha" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(val) => `S/ ${val.toFixed(1)}`} tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                  <Tooltip 
+                    formatter={(value) => [`S/ ${parseFloat(value).toFixed(2)}`, 'Precio Promedio']} 
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} 
+                    labelStyle={{ color: '#1e293b', fontWeight: 'bold' }} 
+                  />
+                  <Legend />
+                  <Line 
+                    type="monotone" 
+                    dataKey="precio" 
+                    name="Precio (S/ por kg)" 
+                    stroke="#15825E" 
+                    strokeWidth={4} 
+                    dot={{ r: 5, fill: '#15825E', strokeWidth: 2, stroke: '#fff' }} 
+                    activeDot={{ r: 7 }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                <Inbox className="h-12 w-12 mb-2 opacity-50" aria-hidden="true" />
+                <span className="font-semibold text-slate-500">No hay datos de precios para este cultivo en el rango seleccionado.</span>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="p-8 text-center text-gray-500">
-            No hay registros para mostrar en este rango de tiempo.
+
+          {/* Tabla de historial detallado */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-800">Historial Detallado</h2>
+            </div>
+            
+            {loading ? (
+              <div className="p-12 space-y-4" aria-label="Cargando tabla de historial">
+                <div className="h-8 skeleton w-full rounded" />
+                <div className="h-8 skeleton w-full rounded" />
+                <div className="h-8 skeleton w-full rounded" />
+              </div>
+            ) : datosGrafica.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="bg-slate-50 text-slate-600 uppercase text-xs font-bold border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 py-4 text-left">Fecha de Registro</th>
+                      <th className="px-6 py-4 text-left">Precio Promedio (S/ x kg)</th>
+                      <th className="px-6 py-4 text-left">Mercado de Abastecimiento</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {[...datosGrafica].reverse().map((p, i) => (
+                      <tr key={i} className="hover:bg-slate-50/70 transition-colors">
+                        <td className="px-6 py-4 font-semibold text-slate-700">
+                          {new Date(p.fechaRaw).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-extrabold text-agro-dark text-base">S/ {p.precio.toFixed(2)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-medium">{p.mercado}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-10 text-center text-slate-400">
+                <span>No hay registros históricos disponibles.</span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

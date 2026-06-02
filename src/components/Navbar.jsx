@@ -62,8 +62,13 @@ export default function Navbar() {
             </div>
           )}
           <div className="-mr-2 flex md:hidden">
-            <button onClick={() => setMenuOpen(!menuOpen)} className="inline-flex items-center justify-center p-2 rounded-md hover:bg-agro-dark focus:outline-none">
-              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            <button 
+              onClick={() => setMenuOpen(!menuOpen)} 
+              className="inline-flex items-center justify-center p-2 rounded-md hover:bg-agro-dark focus:outline-none"
+              aria-label={menuOpen ? "Cerrar menú principal" : "Abrir menú principal"}
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? <X className="h-6 w-6" aria-hidden="true" /> : <Menu className="h-6 w-6" aria-hidden="true" />}
             </button>
           </div>
         </div>

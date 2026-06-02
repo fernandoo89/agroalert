@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import { useAuth, signOut } from '../js/auth';
 import { supabase } from '../js/supabase';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Loader2, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 
 export default function Profile() {
   const { session, profile } = useAuth();
   const navigate = useNavigate();
-  
+
   const [nombre, setNombre] = useState('');
   const [region, setRegion] = useState('');
   const [telefono, setTelefono] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState(''); // 'ok' | 'error'
 
   useEffect(() => {
     if (profile) {
@@ -26,17 +27,19 @@ export default function Profile() {
     e.preventDefault();
     setLoading(true);
     setMsg('');
-    
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update({ nombre, region, telefono })
         .eq('id', session.user.id);
-        
+
       if (error) throw error;
       setMsg('Perfil actualizado correctamente.');
+      setMsgType('ok');
     } catch (err) {
-      setMsg('Error actualizando perfil: ' + err.message);
+      setMsg('Error al guardar el perfil: ' + err.message);
+      setMsgType('error');
     } finally {
       setLoading(false);
     }
@@ -48,60 +51,102 @@ export default function Profile() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-xl mx-auto space-y-6 pb-10">
+      {/* Encabezado */}
       <header className="text-center mb-8">
-        <UserCircle className="h-20 w-20 mx-auto text-agro-primary mb-2" />
-        <h1 className="text-3xl font-bold text-agro-dark">Mi Perfil</h1>
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-agro-light border-2 border-agro-primary/20 mb-3">
+          <UserCircle className="h-14 w-14 text-agro-primary" aria-hidden="true" />
+        </div>
+        <h1 className="text-3xl font-extrabold text-agro-dark tracking-tight">Mi Perfil</h1>
+        <p className="text-slate-500 text-sm mt-1">{session?.user?.email}</p>
       </header>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        {msg && <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-center text-sm">{msg}</div>}
-        
-        <form onSubmit={handleSave} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-            <input 
-              type="text" 
-              value={nombre} 
-              onChange={e => setNombre(e.target.value)} 
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-agro-primary outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
-            <input 
-              type="text" 
-              value={region} 
-              onChange={e => setRegion(e.target.value)} 
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-agro-primary outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-            <input 
-              type="tel" 
-              value={telefono} 
-              onChange={e => setTelefono(e.target.value)} 
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-agro-primary outline-none"
-              placeholder="Ej. 987654321"
-            />
-          </div>
-          
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-agro-primary text-white font-bold py-3 rounded-lg hover:bg-agro-dark transition-colors"
+      {/* Formulario */}
+      <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+        {msg && (
+          <div
+            className={`mb-5 p-3.5 rounded-xl text-sm flex items-start gap-2.5 border ${
+              msgType === 'ok'
+                ? 'bg-green-50 text-green-900 border-green-200'
+                : 'bg-red-50 text-red-950 border-red-200'
+            }`}
+            role="alert"
+            aria-live="polite"
           >
-            {loading ? 'Guardando...' : 'Guardar Cambios'}
+            {msgType === 'ok'
+              ? <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              : <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            }
+            <span>{msg}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSave} className="space-y-5">
+          <div>
+            <label htmlFor="profile-nombre" className="block text-sm font-bold text-slate-700 mb-1.5">
+              Nombre Completo
+            </label>
+            <input
+              id="profile-nombre"
+              type="text"
+              value={nombre}
+              onChange={e => setNombre(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary focus:bg-white outline-none transition-all font-medium text-slate-800 placeholder:text-slate-400"
+              placeholder="Tu nombre completo"
+              autoComplete="name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="profile-region" className="block text-sm font-bold text-slate-700 mb-1.5">
+              Provincia de La Libertad
+            </label>
+            <input
+              id="profile-region"
+              type="text"
+              value={region}
+              onChange={e => setRegion(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary focus:bg-white outline-none transition-all font-medium text-slate-800 placeholder:text-slate-400"
+              placeholder="Ej. Trujillo"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="profile-telefono" className="block text-sm font-bold text-slate-700 mb-1.5">
+              Teléfono / WhatsApp <span className="font-normal text-slate-400 text-xs">(opcional)</span>
+            </label>
+            <input
+              id="profile-telefono"
+              type="tel"
+              value={telefono}
+              onChange={e => setTelefono(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary focus:bg-white outline-none transition-all font-medium text-slate-800 placeholder:text-slate-400"
+              placeholder="Ej. 987 654 321"
+              autoComplete="tel"
+            />
+          </div>
+
+          {/* Botón primario */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
+          >
+            {loading
+              ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Guardando...</span></>
+              : <span>Guardar Cambios</span>
+            }
           </button>
         </form>
       </div>
 
-      <button 
+      {/* Botón secundario — Cerrar sesión */}
+      <button
         onClick={handleSignOut}
-        className="w-full bg-gray-100 text-gray-800 font-bold py-3 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors border"
+        className="w-full flex items-center justify-center gap-2.5 bg-white text-red-600 font-bold py-3.5 rounded-xl border-2 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 shadow-sm active:scale-[0.98]"
       >
-        Cerrar Sesión
+        <LogOut className="h-5 w-5" aria-hidden="true" />
+        <span>Cerrar Sesión</span>
       </button>
     </div>
   );

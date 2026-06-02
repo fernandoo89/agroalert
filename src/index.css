@@ -4,6 +4,46 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased text-base;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased text-base;
   }
+  
+  /* Contorno de enfoque accesible para navegación por teclado */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-agro-primary;
+  }
+}
+
+/* Clases de utilidad de skeleton para carga premium */
+.skeleton {
+  @apply bg-slate-200 animate-pulse rounded-lg;
+}
+
+.skeleton-text {
+  @apply h-4 skeleton;
+}
+
+.skeleton-title {
+  @apply h-6 skeleton w-3/4 mb-4;
+}
+
+.skeleton-card {
+  @apply border border-slate-100 p-5 rounded-xl bg-white space-y-4;
+}
+
+/* Efectos de micro-animación premium */
+.hover-premium {
+  @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 3s ease-in-out infinite;
 }

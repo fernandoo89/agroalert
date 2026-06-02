@@ -6,20 +6,20 @@ export default function AlertCard({ alerta }) {
   const { id, tipo, mensaje, fecha, cultivos } = alerta;
   const [feedback, setFeedback] = useState(null);
   
-  let badgeColor = 'bg-gray-100 text-gray-800 border-gray-200';
+  let badgeColor = 'bg-slate-100 text-slate-800 border-slate-200';
   let Icon = Info;
   let tipoText = 'General';
 
   if (tipo === 'sobreoferta') {
-    badgeColor = 'bg-orange-100 text-orange-800 border-orange-200';
+    badgeColor = 'bg-yellow-50 text-yellow-900 border-yellow-200';
     Icon = AlertTriangle;
     tipoText = 'Sobreoferta';
   } else if (tipo === 'caida_precio') {
-    badgeColor = 'bg-red-100 text-red-800 border-red-200';
+    badgeColor = 'bg-red-50 text-red-950 border-red-200';
     Icon = TrendingDown;
     tipoText = 'Caída de Precio';
   } else if (tipo === 'general') {
-    badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
+    badgeColor = 'bg-blue-50 text-blue-900 border-blue-200';
     Icon = Info;
   }
 
@@ -57,52 +57,52 @@ export default function AlertCard({ alerta }) {
   };
 
   return (
-    <div className={`p-4 rounded-xl border-2 ${badgeColor} shadow-sm bg-white`}>
+    <div className={`p-5 rounded-2xl border-2 ${badgeColor} shadow-sm bg-white hover:shadow-md transition-shadow`}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
-          <Icon className="h-5 w-5" />
-          <span className="font-semibold text-sm uppercase tracking-wider">{tipoText}</span>
+          <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+          <span className="font-bold text-xs uppercase tracking-wider">{tipoText}</span>
           {cultivos && cultivos.nombre && (
-            <span className="bg-white px-2 py-0.5 rounded-full text-xs font-medium border">
+            <span className="bg-white text-slate-800 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-slate-200/80">
               {cultivos.nombre}
             </span>
           )}
         </div>
-        <span className="text-xs font-medium opacity-75">{formattedDate}</span>
+        <span className="text-xs font-medium opacity-80">{formattedDate}</span>
       </div>
       
-      <p className="text-gray-800 text-lg mb-4 mt-2">
+      <p className="text-slate-800 text-base md:text-lg font-medium mb-4 mt-2 leading-relaxed">
         {mensaje}
       </p>
 
       <div className="flex flex-col gap-3">
         <button 
           onClick={handleShare}
-          className="flex items-center gap-2 bg-[#25D366] text-white px-4 py-2.5 rounded-lg font-bold hover:bg-[#128C7E] transition-colors w-full justify-center"
+          className="flex items-center gap-2 bg-[#128C7E] hover:bg-[#0e6e63] text-white px-5 py-3 rounded-xl font-bold transition-all duration-300 w-full justify-center shadow-sm shadow-[#128C7E]/20 active:scale-[0.98]"
         >
-          <Share2 className="h-5 w-5" />
+          <Share2 className="h-5 w-5" aria-hidden="true" />
           Compartir alerta por WhatsApp
         </button>
 
-        <div className="pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span className="text-sm font-medium text-gray-500">¿Te sirvió esta alerta?</span>
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <span className="text-sm font-medium text-slate-500">¿Te sirvió esta alerta?</span>
           {feedback ? (
-            <span className="text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200 w-fit">
+            <span className="text-xs font-bold text-green-800 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200/80 w-fit">
               {feedback === 'si' ? '👍 ¡Gracias! Nos alegra que sirva.' : '👎 Gracias, mejoraremos el reporte.'}
             </span>
           ) : (
             <div className="flex gap-2">
               <button
                 onClick={() => handleFeedback('si')}
-                className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-green-50 hover:text-green-700 hover:border-green-300 transition-all font-semibold"
+                className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-green-50 hover:text-green-800 hover:border-green-300 transition-all font-semibold active:scale-95"
               >
-                👍 Sí, útil
+                <span>👍 Sí, útil</span>
               </button>
               <button
                 onClick={() => handleFeedback('no')}
-                className="flex items-center gap-1.5 text-xs bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-all font-semibold"
+                className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-950 hover:border-red-300 transition-all font-semibold active:scale-95"
               >
-                👎 No
+                <span>👎 No</span>
               </button>
             </div>
           )}
