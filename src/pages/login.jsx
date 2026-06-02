@@ -38,7 +38,14 @@ export default function Login() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setIsLogin(params.get('mode') !== 'register');
+    const mode = params.get('mode');
+    if (mode === 'register') {
+      setIsLogin(false);
+    } else if (mode === 'login') {
+      setIsLogin(true);
+    } else {
+      setIsLogin(true);
+    }
   }, [location.search]);
 
   const handleSubmit = async (e) => {
@@ -86,22 +93,25 @@ export default function Login() {
         </div>
       </div>
       
-      <div className="flex items-center justify-center gap-1 mb-6 rounded-full bg-gray-100 p-1">
-        <button
-          type="button"
-          onClick={() => { setIsLogin(true); setShowPassword(false); setErrorMsg(''); }}
-          className={`px-5 py-2 rounded-full font-semibold ${isLogin ? 'bg-white text-agro-dark' : 'text-gray-500 hover:text-agro-dark'}`}
-        >
-          Ingresar
-        </button>
-        <button
-          type="button"
-          onClick={() => { setIsLogin(false); setShowPassword(false); setErrorMsg(''); }}
-          className={`px-5 py-2 rounded-full font-semibold ${!isLogin ? 'bg-white text-agro-dark' : 'text-gray-500 hover:text-agro-dark'}`}
-        >
-          Registrarse
-        </button>
-      </div>
+      {/* Pestañas solo si el usuario está navegando, no mostrar si viene con parámetro mode */}
+      {!location.search && (
+        <div className="flex items-center justify-center gap-1 mb-6 rounded-full bg-gray-100 p-1">
+          <button
+            type="button"
+            onClick={() => { setIsLogin(true); setShowPassword(false); setErrorMsg(''); }}
+            className={`px-5 py-2 rounded-full font-semibold ${isLogin ? 'bg-white text-agro-dark' : 'text-gray-500 hover:text-agro-dark'}`}
+          >
+            Ingresar
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsLogin(false); setShowPassword(false); setErrorMsg(''); }}
+            className={`px-5 py-2 rounded-full font-semibold ${!isLogin ? 'bg-white text-agro-dark' : 'text-gray-500 hover:text-agro-dark'}`}
+          >
+            Registrarse
+          </button>
+        </div>
+      )}
 
       <h2 className="text-2xl font-bold text-center text-agro-dark mb-4">
         {isLogin ? 'Ingresa a tu cuenta' : 'Regístrate como agricultor'}
