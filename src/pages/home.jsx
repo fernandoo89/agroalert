@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../js/auth';
 import { 
   Sprout, 
   LineChart, 
@@ -79,6 +80,7 @@ const FAQS = [
 ];
 
 export default function Home() {
+  const { session } = useAuth();
   // Estado para la calculadora de rentabilidad
   const [selectedCropKey, setSelectedCropKey] = useState('papa');
   const [harvestWeight, setHarvestWeight] = useState(2000); // Kilos predeterminados
@@ -120,19 +122,19 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Link
-                to="/login"
+                to={session ? "/dashboard" : "/login"}
                 aria-label="Acceder a mi panel de AgroAlert"
                 className="inline-flex items-center justify-center gap-2 bg-agro-primary text-white text-lg font-bold px-8 py-4 rounded-2xl hover:bg-agro-dark transition-all duration-300 shadow-lg hover:shadow-xl shadow-agro-primary/20 hover:-translate-y-0.5 active:scale-[0.98]"
               >
-                <span>Acceder a la App</span>
+                <span>{session ? 'Ir a mi Panel' : 'Acceder a la App'}</span>
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
               </Link>
               <Link
-                to="/login?mode=register"
-                aria-label="Registrarme en AgroAlert"
+                to={session ? "/profile" : "/login?mode=register"}
+                aria-label={session ? "Ver mi perfil de AgroAlert" : "Registrarme en AgroAlert"}
                 className="inline-flex items-center justify-center text-agro-dark bg-white border-2 border-slate-200 text-lg font-bold px-8 py-4 rounded-2xl hover:border-agro-primary hover:text-agro-primary hover:-translate-y-0.5 transition-all duration-300 shadow-sm active:scale-[0.98]"
               >
-                <span>Registrarme Gratis</span>
+                <span>{session ? 'Ver mi Perfil' : 'Registrarme Gratis'}</span>
               </Link>
             </div>
           </div>
@@ -448,17 +450,17 @@ export default function Home() {
             
             <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link 
-                to="/login?mode=register"
+                to={session ? "/dashboard" : "/login?mode=register"}
                 className="inline-flex items-center gap-2 bg-agro-primary hover:bg-agro-dark text-white font-bold px-8 py-4 rounded-2xl transition-all duration-300 shadow-lg shadow-agro-primary/20 hover:-translate-y-0.5 w-full sm:w-auto justify-center"
               >
-                <span>Registrarme ahora</span>
+                <span>{session ? 'Ir a mi Panel' : 'Registrarme ahora'}</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link 
-                to="/login"
+                to={session ? "/prices" : "/login"}
                 className="text-slate-300 hover:text-white font-extrabold text-sm border-b-2 border-transparent hover:border-white transition-all py-1.5"
               >
-                Ya tengo cuenta, ingresar
+                {session ? 'Ver Precios del Día' : 'Ya tengo cuenta, ingresar'}
               </Link>
             </div>
           </div>
