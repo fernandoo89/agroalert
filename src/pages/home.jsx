@@ -71,7 +71,7 @@ const FAQS = [
   },
   {
     pregunta: '¿Tiene algún costo registrarse y usar la plataforma?',
-    respuesta: 'No, AgroAlert es y será siempre 100% gratuita para los agricultores de La Libertad. Nuestro propósito es reducir la asimetría de información y apoyar la rentabilidad del sector agrícola familiar.'
+    respuesta: 'AgroAlert ofrece un Plan Básico por S/ 5.00 al mes y un Plan Premium por S/ 15.00 al mes. Ambos incluyen 30 días de prueba gratuita para que puedas comprobar el valor y el retorno de inversión en tu cosecha sin ningún compromiso.'
   },
   {
     pregunta: '¿Cómo comparto la información con mi comunidad?',
@@ -432,6 +432,112 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Sección Planes y Precios */}
+      <section className="max-w-7xl mx-auto px-4 w-full text-center space-y-12" aria-labelledby="pricing-title">
+        <div className="space-y-4">
+          <p className="text-sm uppercase tracking-[0.2em] text-agro-primary font-extrabold">Precios transparentes</p>
+          <h2 id="pricing-title" className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Planes adaptados a tu escala de producción
+          </h2>
+          <p className="text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Comienza a tomar el control de tus ventas hoy mismo. Todos los planes incluyen 30 días de prueba gratuita.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Plan Básico */}
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200/80 flex flex-col justify-between text-left hover:shadow-md transition-shadow relative">
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-800 mb-2">Plan Básico</h3>
+              <p className="text-slate-500 text-sm mb-6">Ideal para pequeños agricultores que quieren monitorear el día a día.</p>
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-900">S/ 5.00</span>
+                <span className="text-slate-500 text-sm font-semibold"> / mes</span>
+              </div>
+              <ul className="space-y-3.5 mb-8">
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Precios del día (Mercado La Hermelinda)</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Alertas tempranas de sobreoferta</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-400 font-medium line-through">
+                  <CheckCircle2 className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                  <span>Historial completo (30 y 60 días)</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-400 font-medium line-through">
+                  <CheckCircle2 className="h-5 w-5 text-slate-300 flex-shrink-0" />
+                  <span>Recomendaciones inteligentes de siembra</span>
+                </li>
+              </ul>
+            </div>
+            <Link
+              to="/login?mode=register"
+              className="w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 px-6 rounded-xl transition-colors active:scale-[0.98]"
+            >
+              Empezar gratis 30 días
+            </Link>
+          </div>
+
+          {/* Plan Premium */}
+          <div className="bg-white p-8 rounded-3xl shadow-xl border-2 border-agro-primary flex flex-col justify-between text-left hover:shadow-2xl transition-all relative scale-105 md:translate-y-[-8px]">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-agro-primary text-white text-xs uppercase font-extrabold tracking-widest px-4 py-1.5 rounded-full shadow-sm">
+              Más popular
+            </div>
+            <div>
+              <h3 className="text-xl font-extrabold text-slate-800 mb-2">Plan Premium</h3>
+              <p className="text-slate-500 text-sm mb-6">Para productores que planifican a mediano plazo y evitan pérdidas críticas.</p>
+              <div className="mb-6">
+                <span className="text-4xl font-black text-slate-900">S/ 15.00</span>
+                <span className="text-slate-500 text-sm font-semibold"> / mes</span>
+              </div>
+              <ul className="space-y-3.5 mb-8">
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Precios del día (Mercado La Hermelinda)</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Alertas tempranas de sobreoferta</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Historial completo de precios (30 y 60 días)</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Recomendaciones inteligentes de siembra</span>
+                </li>
+                <li className="flex items-center gap-2.5 text-sm text-slate-700 font-medium">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <span>Descarga de reportes ilimitados por cultivo</span>
+                </li>
+              </ul>
+            </div>
+            <Link
+              to="/login?mode=register"
+              className="w-full text-center bg-agro-primary hover:bg-agro-dark text-white font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-agro-primary/20 active:scale-[0.98]"
+            >
+              Empezar gratis 30 días
+            </Link>
+          </div>
+        </div>
+
+        {/* Banner B2B */}
+        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between text-left gap-4 mt-6">
+          <div>
+            <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Próximamente</span>
+            <h4 className="font-extrabold text-slate-800 mt-2">¿Representas a una asociación o institución agraria?</h4>
+            <p className="text-slate-500 text-sm mt-0.5">Estamos preparando accesos y reportes consolidados de datos agregados para cooperativas y programas regionales.</p>
+          </div>
+          <button className="bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2 px-5 rounded-xl text-sm transition-colors cursor-not-allowed opacity-80 flex-shrink-0">
+            Saber más
+          </button>
         </div>
       </section>
 
