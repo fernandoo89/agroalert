@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../js/supabase';
+import { registrarEvento } from '../js/tracking';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AlertCircle, RefreshCw, Inbox, Calendar, LayoutGrid } from 'lucide-react';
 
@@ -10,6 +11,8 @@ export default function Prices() {
   const [datosGrafica, setDatosGrafica] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  const lastTrackedRef = useRef('');
 
   // Cargar cultivos para el selector
   useEffect(() => {
@@ -57,6 +60,16 @@ export default function Prices() {
             fechaRaw: p.fecha,
           }));
           setDatosGrafica(chartData);
+          
+          const cultivoSeleccionado = cultivos.find(c => c.id.toString() === cultivoActivo.toString())?.nombre;
+          const trackKey = `${cultivoActivo}-${dias}`;
+          if (cultivoSeleccionado && lastTrackedRef.current !== trackKey) {
+            lastTrackedRef.current = trackKey;
+            registrarEvento('historial_consultado', {
+              cultivo: cultivoSeleccionado,
+              rango_dias: dias
+            });
+          }
         }
       } catch (err) {
         console.error("Error al cargar precios:", err);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { registrarEvento } from './tracking';
 
 export function useAuth() {
   const [session, setSession] = useState(null);
@@ -9,8 +10,12 @@ export function useAuth() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
+      if (session) {
+        checkPendingRegistration();
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     const {
@@ -18,6 +23,7 @@ export function useAuth() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
+        checkPendingRegistration();
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -43,6 +49,19 @@ export function useAuth() {
       console.error('Error fetching profile:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkPendingRegistration = () => {
+    const pendingReg = localStorage.getItem('pending_registro_completado');
+    if (pendingReg) {
+      try {
+        const data = JSON.parse(pendingReg);
+        registrarEvento('registro_completado', data);
+        localStorage.removeItem('pending_registro_completado');
+      } catch (e) {
+        console.error(e);
+      }
     }
   };
 

@@ -63,6 +63,12 @@ export default function Login() {
           }
         });
         if (error) throw error;
+        
+        localStorage.setItem('pending_registro_completado', JSON.stringify({ 
+          provincia: region, 
+          cantidad_cultivos: cultivos.length 
+        }));
+        
         navigate('/dashboard');
       }
     } catch (err) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
+import { registrarEvento } from '../js/tracking';
 import { AlertTriangle, TrendingDown, Info, Share2 } from 'lucide-react';
 
 export default function AlertCard({ alerta }) {
@@ -30,10 +31,18 @@ export default function AlertCard({ alerta }) {
     }
   }, [id]);
 
-  const handleFeedback = async (val) => {
+  const handleFeedback = async (e, val) => {
+    if (e) e.stopPropagation();
     setFeedback(val);
     localStorage.setItem(`feedback_alerta_${id}`, val);
     
+    // Register event tracking
+    registrarEvento('alerta_valorada', {
+      cultivo: cultivos?.nombre || null,
+      alerta_id: id,
+      valoracion: val === 'si' ? 'util' : 'no_util'
+    });
+
     try {
       await supabase.from('feedback_alertas').insert({
         alerta_id: id,
@@ -49,15 +58,33 @@ export default function AlertCard({ alerta }) {
     year: 'numeric', month: 'short', day: 'numeric'
   });
 
-  const handleShare = () => {
+  const handleShare = (e) => {
+    if (e) e.stopPropagation();
+    
+    registrarEvento('alerta_compartida_whatsapp', {
+      cultivo: cultivos?.nombre || null,
+      alerta_id: id
+    });
+
     const cropText = cultivos?.nombre ? ` en el cultivo de ${cultivos.nombre.toUpperCase()}` : '';
     const text = `⚠️ *AgroAlert - Alerta de Mercado* ⚠️\n\nSe ha reportado una situación de *${tipoText.toUpperCase()}*${cropText}.\n\n*Mensaje:* ${mensaje}\n\n📅 _Fecha:_ ${formattedDate}\n\nConsulta precios y recomendaciones en tiempo real aquí: ${window.location.origin}`;
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
 
+  const handleCardClick = () => {
+    registrarEvento('alerta_consultada', {
+      cultivo: cultivos?.nombre || null,
+      alerta_id: id,
+      tipo_alerta: tipo
+    });
+  };
+
   return (
-    <div className={`p-5 rounded-2xl border-2 ${badgeColor} shadow-sm bg-white hover:shadow-md transition-shadow`}>
+    <div 
+      onClick={handleCardClick}
+      className={`p-5 rounded-2xl border-2 ${badgeColor} shadow-sm bg-white hover:shadow-md transition-shadow cursor-pointer`}
+    >
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
@@ -93,13 +120,13 @@ export default function AlertCard({ alerta }) {
           ) : (
             <div className="flex gap-2">
               <button
-                onClick={() => handleFeedback('si')}
+                onClick={(e) => handleFeedback(e, 'si')}
                 className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-green-50 hover:text-green-800 hover:border-green-300 transition-all font-semibold active:scale-95"
               >
                 <span>👍 Sí, útil</span>
               </button>
               <button
-                onClick={() => handleFeedback('no')}
+                onClick={(e) => handleFeedback(e, 'no')}
                 className="flex items-center gap-1.5 text-xs bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-950 hover:border-red-300 transition-all font-semibold active:scale-95"
               >
                 <span>👎 No</span>

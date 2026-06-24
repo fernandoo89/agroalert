@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
+import { registrarEvento } from '../js/tracking';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 export default function PriceCard({ nombre, precioActual, tendencia }) {
@@ -42,8 +43,18 @@ export default function PriceCard({ nombre, precioActual, tendencia }) {
     }
   };
 
+  const handleCardClick = () => {
+    registrarEvento('precio_dia_consultado', {
+      cultivo: nombre,
+      precio: parseFloat(precioActual)
+    });
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-between hover:shadow-md transition-shadow">
+    <div 
+      onClick={handleCardClick}
+      className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer"
+    >
       <div>
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-xl font-bold text-slate-800">{nombre}</h3>
@@ -68,7 +79,7 @@ export default function PriceCard({ nombre, precioActual, tendencia }) {
             {feedback === 'si' ? '👍 Sí' : '👎 No'}
           </span>
         ) : (
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => handleFeedback('si')}
               className="text-xs bg-slate-50 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-green-50 hover:text-green-800 hover:border-green-300 transition-all font-semibold active:scale-95"
