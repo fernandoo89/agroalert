@@ -32,32 +32,37 @@ Asegúrate de tener instalado en tu sistema local:
    ```bash
    git clone https://github.com/tu-usuario/proyecto-agricultivo.git
    cd proyecto-agricultivo
+   ```
 
-2. **Instalar dependencias:** :
+2. **Instalar dependencias**:
    ```bash
-    npm install
+   npm install
+   ```
 
-3. **Configurar Variables de Entorno: El proyecto utiliza Supabase. Necesitas crear un archivo .env en la raíz del proyecto basado en las credenciales de tu proyecto en Supabase:** :
-   ```bash
-    VITE_SUPABASE_URL=tu_supabase_url
+3. **Configurar Variables de Entorno**: 
+   El proyecto utiliza Supabase. Necesitas crear un archivo `.env` en la raíz del proyecto basado en las credenciales de tu proyecto en Supabase:
+   ```env
+   VITE_SUPABASE_URL=tu_supabase_url
    VITE_SUPABASE_ANON_KEY=tu_supabase_anon_key
+   ```
    
-4. **Ejecutar el servidor de desarrollo:** :
+4. **Ejecutar el servidor de desarrollo**:
    ```bash
-    npm run dev
+   npm run dev
+   ```
 
-La aplicación estará disponible en http://localhost:5173
+La aplicación estará disponible en `http://localhost:5173`
 
-📜 Scripts Disponibles
+## 📜 Scripts Disponibles
 En el directorio del proyecto, puedes ejecutar:
 
-npm run dev: Inicia el servidor de desarrollo utilizando Vite.
-npm run build: Construye la aplicación para producción en la carpeta dist.
-npm run preview: Previsualiza la versión de producción localmente.
-npm run lint: Ejecuta ESLint para buscar y advertir sobre errores en el código.
-npm run seed:admin: Script especial de Node para crear el usuario administrador inicial.
+- `npm run dev`: Inicia el servidor de desarrollo utilizando Vite.
+- `npm run build`: Construye la aplicación para producción en la carpeta dist.
+- `npm run preview`: Previsualiza la versión de producción localmente.
+- `npm run lint`: Ejecuta ESLint para buscar y advertir sobre errores en el código.
+- `npm run seed:admin`: Script especial de Node para crear el usuario administrador inicial.
 
-📂 Estructura del Proyecto
+## 📂 Estructura del Proyecto
 
 ```text
 proyecto-agricultivo/
@@ -77,16 +82,10 @@ proyecto-agricultivo/
 └── vite.config.js         # Configuración del empaquetador Vite
   ```
 
+## 🤝 Contribución
 
-
-🤝 Contribución
-Haz un Fork del proyecto
-Crea tu rama de características (git checkout -b feature/NuevaCaracteristica)
-Haz Commit de tus cambios (git commit -m 'Añadir alguna NuevaCaracteristica')
-Haz Push a la rama (git push origin feature/NuevaCaracteristica)
-Abre un Pull Request
-
-
-   ```bash 2. Instalar dependencias:
-   git clone https://github.com/tu-usuario/proyecto-agricultivo.git
-   cd proyecto-agricultivo
+1. Haz un Fork del proyecto.
+2. Crea tu rama de características (`git checkout -b feature/NuevaCaracteristica`).
+3. Haz Commit de tus cambios (`git commit -m 'Añadir alguna NuevaCaracteristica'`).
+4. Haz Push a la rama (`git push origin feature/NuevaCaracteristica`).
+5. Abre un Pull Request.
