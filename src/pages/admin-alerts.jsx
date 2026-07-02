@@ -2,19 +2,36 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
 import { useAuth } from '../js/auth';
 import { AlertTriangle, Trash2, Plus, ToggleLeft, Loader2, CheckCircle, AlertCircle, Inbox } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const alertSchema = z.object({
+  cultivoId: z.string().min(1, 'Selecciona un cultivo'),
+  tipoAlerta: z.enum(['sobreoferta', 'caida_precio', 'general']),
+  mensaje: z.string().min(1, 'El mensaje es requerido').max(200, 'El mensaje no puede exceder 200 caracteres'),
+});
 
 export default function AdminAlerts() {
   const { profile } = useAuth();
   const [cultivos, setCultivos] = useState([]);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('');
 
-  const [cultivoId, setCultivoId] = useState('');
-  const [tipoAlerta, setTipoAlerta] = useState('sobreoferta');
-  const [mensaje, setMensaje] = useState('');
+  const { register, handleSubmit, formState: { errors, isSubmitting, isValid }, reset, watch, setValue } = useForm({
+    resolver: zodResolver(alertSchema),
+    defaultValues: {
+      cultivoId: '',
+      tipoAlerta: 'sobreoferta',
+      mensaje: ''
+    }
+  });
+
+  const watchMensaje = watch('mensaje', '');
+  const watchTipoAlerta = watch('tipoAlerta');
 
   // Sistema de colores consistente:
   // sobreoferta → amarillo (atención)
@@ -31,7 +48,7 @@ export default function AdminAlerts() {
       const { data: cultivosData } = await supabase.from('cultivos').select('id, nombre').order('nombre');
       if (cultivosData) {
         setCultivos(cultivosData);
-        if (cultivosData.length > 0 && !cultivoId) setCultivoId(cultivosData[0].id.toString());
+        if (cultivosData.length > 0) setValue('cultivoId', cultivosData[0].id.toString());
       }
       const { data: alertasData } = await supabase
         .from('alertas').select('*, cultivos(nombre)')
@@ -47,32 +64,25 @@ export default function AdminAlerts() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setMsg('');
-    if (!cultivoId) { setMsg('Selecciona un cultivo.'); setMsgType('error'); return; }
-    if (!mensaje.trim()) { setMsg('Escribe un mensaje para la alerta.'); setMsgType('error'); return; }
-    if (mensaje.length > 200) { setMsg('El mensaje no puede exceder 200 caracteres.'); setMsgType('error'); return; }
 
-    setSubmitting(true);
     try {
       const { error } = await supabase.from('alertas').insert({
-        cultivo_id: parseInt(cultivoId),
-        tipo: tipoAlerta,
-        mensaje: mensaje.trim(),
+        cultivo_id: parseInt(data.cultivoId),
+        tipo: data.tipoAlerta,
+        mensaje: data.mensaje.trim(),
         activa: true,
         fecha: new Date().toISOString(),
       });
       if (error) throw error;
       setMsg('Alerta creada correctamente.');
       setMsgType('ok');
-      setMensaje('');
+      reset({ ...data, mensaje: '' });
       loadData();
     } catch (err) {
       setMsg('Error al crear: ' + err.message);
       setMsgType('error');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -136,25 +146,24 @@ export default function AdminAlerts() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="alert-cultivo" className="block text-sm font-bold text-slate-700 mb-2">Cultivo</label>
+              <label htmlFor="alert-cultivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Cultivo</label>
               <select
                 id="alert-cultivo"
-                value={cultivoId}
-                onChange={e => setCultivoId(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
-                required
+                {...register('cultivoId')}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
               >
                 <option value="">Selecciona un cultivo</option>
                 {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
+              {errors.cultivoId && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.cultivoId.message}</p>}
             </div>
 
             <div>
               <fieldset>
-                <legend className="block text-sm font-bold text-slate-700 mb-2">Tipo de Alerta</legend>
+                <legend className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Tipo de Alerta</legend>
                 <div className="flex gap-3 flex-wrap">
                   {tiposAlerta.map(tipo => (
                     <label key={tipo.value} htmlFor={`alert-tipo-${tipo.value}`} className="flex items-center gap-2 cursor-pointer">
@@ -162,43 +171,42 @@ export default function AdminAlerts() {
                         id={`alert-tipo-${tipo.value}`}
                         type="radio"
                         value={tipo.value}
-                        checked={tipoAlerta === tipo.value}
-                        onChange={e => setTipoAlerta(e.target.value)}
+                        {...register('tipoAlerta')}
                         className="w-4 h-4 accent-agro-primary cursor-pointer"
                       />
-                      <span className="text-sm font-semibold text-slate-700">{tipo.label}</span>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{tipo.label}</span>
                     </label>
                   ))}
                 </div>
+                {errors.tipoAlerta && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tipoAlerta.message}</p>}
               </fieldset>
             </div>
           </div>
 
           <div>
-            <label htmlFor="alert-mensaje" className="block text-sm font-bold text-slate-700 mb-2">
+            <label htmlFor="alert-mensaje" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
               Mensaje <span className="text-xs text-slate-400 font-normal">(máx. 200 caracteres)</span>
             </label>
             <textarea
               id="alert-mensaje"
-              value={mensaje}
-              onChange={e => setMensaje(e.target.value.slice(0, 200))}
+              {...register('mensaje')}
               placeholder="Ej. El precio del tomate bajó 25% en La Hermelinda. Espera antes de vender si es posible."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none resize-none transition-all font-medium text-slate-800"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none resize-none transition-all font-medium text-slate-800 dark:text-slate-100"
               rows="3"
-              required
             />
-            <p className={`text-xs mt-1 font-semibold ${mensaje.length > 180 ? 'text-red-600' : 'text-slate-400'}`}>
-              {mensaje.length}/200 caracteres
+            {errors.mensaje && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.mensaje.message}</p>}
+            <p className={`text-xs mt-1 font-semibold ${watchMensaje.length > 180 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
+              {watchMensaje.length}/200 caracteres
             </p>
           </div>
 
           {/* Botón primario */}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isSubmitting}
             className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
           >
-            {submitting
+            {isSubmitting
               ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Creando alerta...</span></>
               : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Crear Alerta</span></>
             }
@@ -227,11 +235,18 @@ export default function AdminAlerts() {
             ))}
           </div>
         ) : alertas.length > 0 ? (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            <AnimatePresence>
             {alertas.map(alerta => {
               const tipoBadge = getTipoBadge(alerta.tipo);
               return (
-                <div key={alerta.id} className={`p-6 border-l-4 ${alerta.activa ? 'border-l-agro-primary bg-white' : 'border-l-slate-200 bg-slate-50/50'}`}>
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  key={alerta.id} 
+                  className={`p-6 border-l-4 ${alerta.activa ? 'border-l-agro-primary bg-white dark:bg-slate-800' : 'border-l-slate-200 dark:border-l-slate-600 bg-slate-50/50 dark:bg-slate-800/50'}`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-grow">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -272,9 +287,10 @@ export default function AdminAlerts() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
+            </AnimatePresence>
           </div>
         ) : (
           <div className="p-14 text-center text-slate-400">

@@ -13,6 +13,7 @@ import {
   ShieldAlert 
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const { session, profile } = useAuth();
@@ -165,10 +166,13 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+            
+            <ThemeToggle />
           </div>
 
           {/* Menú de móvil (Gatillo) */}
-          <div className="-mr-2 flex md:hidden">
+          <div className="-mr-2 flex md:hidden items-center gap-2">
+            <ThemeToggle />
             <button 
               onClick={() => setMenuOpen(!menuOpen)} 
               className="inline-flex items-center justify-center p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white focus:outline-none transition-all"

@@ -2,19 +2,33 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
 import { useAuth } from '../js/auth';
 import { Lightbulb, Trash2, Plus, ToggleLeft, Loader2, CheckCircle, AlertCircle, Inbox } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const recSchema = z.object({
+  cultivoId: z.string().min(1, 'Selecciona un cultivo'),
+  estado: z.enum(['recomendado', 'precaucion', 'evitar']),
+  motivo: z.string().min(1, 'El motivo es requerido'),
+});
 
 export default function AdminRecommendations() {
   const { profile } = useAuth();
   const [cultivos, setCultivos] = useState([]);
   const [recomendaciones, setRecomendaciones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('');
 
-  const [cultivoId, setCultivoId] = useState('');
-  const [estado, setEstado] = useState('recomendado');
-  const [motivo, setMotivo] = useState('');
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm({
+    resolver: zodResolver(recSchema),
+    defaultValues: {
+      cultivoId: '',
+      estado: 'recomendado',
+      motivo: ''
+    }
+  });
 
   // Sistema de colores consistente:
   // recomendado → verde (bueno)
@@ -31,7 +45,7 @@ export default function AdminRecommendations() {
       const { data: cultivosData } = await supabase.from('cultivos').select('id, nombre').order('nombre');
       if (cultivosData) {
         setCultivos(cultivosData);
-        if (cultivosData.length > 0 && !cultivoId) setCultivoId(cultivosData[0].id.toString());
+        if (cultivosData.length > 0) setValue('cultivoId', cultivosData[0].id.toString());
       }
       const { data: recsData } = await supabase
         .from('recomendaciones').select('*, cultivos(nombre)')
@@ -47,38 +61,33 @@ export default function AdminRecommendations() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setMsg('');
-    if (!cultivoId) { setMsg('Selecciona un cultivo.'); setMsgType('error'); return; }
-    if (!motivo.trim()) { setMsg('Escribe el motivo de la recomendación.'); setMsgType('error'); return; }
 
-    setSubmitting(true);
     try {
       // Desactivar recomendación previa activa para este cultivo
       const { data: existente } = await supabase
         .from('recomendaciones').select('id')
-        .eq('cultivo_id', parseInt(cultivoId)).eq('activa', true).single();
+        .eq('cultivo_id', parseInt(data.cultivoId)).eq('activa', true).single();
       if (existente) {
         await supabase.from('recomendaciones').update({ activa: false }).eq('id', existente.id);
       }
 
       const { error } = await supabase.from('recomendaciones').insert({
-        cultivo_id: parseInt(cultivoId),
-        estado, motivo: motivo.trim(),
+        cultivo_id: parseInt(data.cultivoId),
+        estado: data.estado, 
+        motivo: data.motivo.trim(),
         activa: true,
         created_at: new Date().toISOString(),
       });
       if (error) throw error;
       setMsg('Recomendación guardada correctamente.');
       setMsgType('ok');
-      setMotivo('');
+      reset({ ...data, motivo: '' });
       loadData();
     } catch (err) {
       setMsg('Error al crear: ' + err.message);
       setMsgType('error');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -142,25 +151,24 @@ export default function AdminRecommendations() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="rec-cultivo" className="block text-sm font-bold text-slate-700 mb-2">Cultivo</label>
+              <label htmlFor="rec-cultivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Cultivo</label>
               <select
                 id="rec-cultivo"
-                value={cultivoId}
-                onChange={e => setCultivoId(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
-                required
+                {...register('cultivoId')}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
               >
                 <option value="">Selecciona un cultivo</option>
                 {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
+              {errors.cultivoId && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.cultivoId.message}</p>}
             </div>
 
             <div>
               <fieldset>
-                <legend className="block text-sm font-bold text-slate-700 mb-2">Estado de la Recomendación</legend>
+                <legend className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Estado de la Recomendación</legend>
                 <div className="flex gap-3 flex-wrap">
                   {estados.map(est => (
                     <label key={est.value} htmlFor={`rec-estado-${est.value}`} className="flex items-center gap-2 cursor-pointer">
@@ -168,38 +176,37 @@ export default function AdminRecommendations() {
                         id={`rec-estado-${est.value}`}
                         type="radio"
                         value={est.value}
-                        checked={estado === est.value}
-                        onChange={e => setEstado(e.target.value)}
+                        {...register('estado')}
                         className="w-4 h-4 accent-agro-primary cursor-pointer"
                       />
-                      <span className="text-sm font-semibold text-slate-700">{est.label}</span>
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{est.label}</span>
                     </label>
                   ))}
                 </div>
+                {errors.estado && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.estado.message}</p>}
               </fieldset>
             </div>
           </div>
 
           <div>
-            <label htmlFor="rec-motivo" className="block text-sm font-bold text-slate-700 mb-2">Motivo de la Recomendación</label>
+            <label htmlFor="rec-motivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Motivo de la Recomendación</label>
             <textarea
               id="rec-motivo"
-              value={motivo}
-              onChange={e => setMotivo(e.target.value)}
+              {...register('motivo')}
               placeholder="Ej. Precio estable, buena demanda en mercado mayorista, baja competencia en La Hermelinda."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none resize-none transition-all font-medium text-slate-800"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none resize-none transition-all font-medium text-slate-800 dark:text-slate-100"
               rows="3"
-              required
             />
+            {errors.motivo && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.motivo.message}</p>}
           </div>
 
           {/* Botón primario */}
           <button
             type="submit"
-            disabled={submitting}
+            disabled={isSubmitting}
             className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
           >
-            {submitting
+            {isSubmitting
               ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Guardando...</span></>
               : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Guardar Recomendación</span></>
             }
@@ -228,11 +235,18 @@ export default function AdminRecommendations() {
             ))}
           </div>
         ) : recomendaciones.length > 0 ? (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
+            <AnimatePresence>
             {recomendaciones.map(rec => {
               const estadoBadge = getEstadoBadge(rec.estado);
               return (
-                <div key={rec.id} className={`p-6 border-l-4 ${rec.activa ? 'border-l-agro-primary bg-white' : 'border-l-slate-200 bg-slate-50/50'}`}>
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  key={rec.id} 
+                  className={`p-6 border-l-4 ${rec.activa ? 'border-l-agro-primary bg-white dark:bg-slate-800' : 'border-l-slate-200 dark:border-l-slate-600 bg-slate-50/50 dark:bg-slate-800/50'}`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-grow">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -273,9 +287,10 @@ export default function AdminRecommendations() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
+            </AnimatePresence>
           </div>
         ) : (
           <div className="p-14 text-center text-slate-400">

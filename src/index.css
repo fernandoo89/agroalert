@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased text-base;
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 font-sans antialiased text-base transition-colors duration-300;
   }
   
   /* Contorno de enfoque accesible para navegación por teclado */
@@ -15,7 +15,7 @@
 
 /* Clases de utilidad de skeleton para carga premium */
 .skeleton {
-  @apply bg-slate-200 animate-pulse rounded-lg;
+  @apply bg-slate-200 dark:bg-slate-800 animate-pulse rounded-lg;
 }
 
 .skeleton-text {
@@ -27,7 +27,7 @@
 }
 
 .skeleton-card {
-  @apply border border-slate-100 p-5 rounded-xl bg-white space-y-4;
+  @apply border border-slate-100 dark:border-slate-800 p-5 rounded-xl bg-white dark:bg-slate-800/50 space-y-4;
 }
 
 /* Efectos de micro-animación premium */

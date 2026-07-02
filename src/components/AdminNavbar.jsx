@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, signOut } from '../js/auth';
 import { Sprout, Menu, X, LogOut, Home } from 'lucide-react';
 import { useState } from 'react';
+import ThemeToggle from './ThemeToggle';
 
 export default function AdminNavbar() {
   const { session, profile } = useAuth();
@@ -46,11 +47,13 @@ export default function AdminNavbar() {
                 <button onClick={handleSignOut} className="flex items-center gap-1 hover:bg-yellow-700 px-2 py-1 rounded transition-colors" title="Cerrar sesión">
                   <LogOut className="h-5 w-5" />
                 </button>
+                <ThemeToggle />
               </div>
             </div>
           </div>
 
-          <div className="-mr-2 flex md:hidden">
+          <div className="-mr-2 flex md:hidden items-center gap-2">
+            <ThemeToggle />
             <button onClick={() => setMenuOpen(!menuOpen)} className="inline-flex items-center justify-center p-2 rounded-md hover:bg-yellow-700 focus:outline-none">
               {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>

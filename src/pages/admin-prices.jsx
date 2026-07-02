@@ -2,22 +2,36 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../js/supabase';
 import { useAuth } from '../js/auth';
 import { Trash2, Plus, Loader2, CheckCircle, AlertCircle, Inbox } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const priceSchema = z.object({
+  cultivoId: z.string().min(1, 'Selecciona un cultivo'),
+  precioKg: z.coerce.number().min(0.01, 'El precio debe ser mayor a 0'),
+  fecha: z.string().min(1, 'La fecha es requerida'),
+  mercado: z.string().min(1, 'Selecciona un mercado'),
+});
 
 export default function AdminPrices() {
   const { profile } = useAuth();
   const [cultivos, setCultivos] = useState([]);
   const [ultimosPrecios, setUltimosPrecios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState(''); // 'ok' | 'error'
 
-  const [cultivoId, setCultivoId] = useState('');
-  const [precioKg, setPrecioKg] = useState('');
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [mercado, setMercado] = useState('Mercado La Hermelinda');
-
   const mercados = ['Mercado La Hermelinda', 'Mayorista Lima', 'Otro'];
+
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm({
+    resolver: zodResolver(priceSchema),
+    defaultValues: {
+      cultivoId: '',
+      precioKg: '',
+      fecha: new Date().toISOString().split('T')[0],
+      mercado: 'Mercado La Hermelinda'
+    }
+  });
 
   const loadData = async () => {
     setLoading(true);
@@ -26,8 +40,8 @@ export default function AdminPrices() {
         .from('cultivos').select('id, nombre').order('nombre');
       if (cultivosData) {
         setCultivos(cultivosData);
-        if (cultivosData.length > 0 && !cultivoId)
-          setCultivoId(cultivosData[0].id.toString());
+        if (cultivosData.length > 0)
+          setValue('cultivoId', cultivosData[0].id.toString());
       }
       const { data: preciosData } = await supabase
         .from('precios').select('*, cultivos(nombre)')
@@ -42,32 +56,25 @@ export default function AdminPrices() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     setMsg('');
 
-    if (!cultivoId) { setMsg('Selecciona un cultivo.'); setMsgType('error'); return; }
-    if (!precioKg || parseFloat(precioKg) <= 0) { setMsg('Ingresa un precio válido mayor a 0.'); setMsgType('error'); return; }
-
-    setSubmitting(true);
     try {
       const { error } = await supabase.from('precios').insert({
-        cultivo_id: parseInt(cultivoId),
-        precio_kg: parseFloat(precioKg),
-        fecha, mercado,
+        cultivo_id: parseInt(data.cultivoId),
+        precio_kg: data.precioKg,
+        fecha: data.fecha,
+        mercado: data.mercado,
         fuente: 'Admin AgroAlert',
       });
       if (error) throw error;
       setMsg('Precio registrado correctamente.');
       setMsgType('ok');
-      setPrecioKg('');
-      setFecha(new Date().toISOString().split('T')[0]);
+      reset({ ...data, precioKg: '' });
       loadData();
     } catch (err) {
       setMsg('Error al guardar: ' + err.message);
       setMsgType('error');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -112,68 +119,64 @@ export default function AdminPrices() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid sm:grid-cols-2 gap-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="grid sm:grid-cols-2 gap-5">
           <div>
-            <label htmlFor="price-cultivo" className="block text-sm font-bold text-slate-700 mb-2">Cultivo</label>
+            <label htmlFor="price-cultivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Cultivo</label>
             <select
               id="price-cultivo"
-              value={cultivoId}
-              onChange={e => setCultivoId(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
-              required
+              {...register('cultivoId')}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
             >
               <option value="">Selecciona un cultivo</option>
               {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
+            {errors.cultivoId && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.cultivoId.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="price-precio" className="block text-sm font-bold text-slate-700 mb-2">Precio (S/ por kg)</label>
+            <label htmlFor="price-precio" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Precio (S/ por kg)</label>
             <input
               id="price-precio"
               type="number"
               step="0.01"
-              min="0.01"
-              value={precioKg}
-              onChange={e => setPrecioKg(e.target.value)}
+              {...register('precioKg')}
               placeholder="Ej. 2.50"
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
-              required
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
             />
+            {errors.precioKg && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.precioKg.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="price-fecha" className="block text-sm font-bold text-slate-700 mb-2">Fecha</label>
+            <label htmlFor="price-fecha" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Fecha</label>
             <input
               id="price-fecha"
               type="date"
-              value={fecha}
-              onChange={e => setFecha(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
-              required
+              {...register('fecha')}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
             />
+            {errors.fecha && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.fecha.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="price-mercado" className="block text-sm font-bold text-slate-700 mb-2">Mercado</label>
+            <label htmlFor="price-mercado" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Mercado</label>
             <select
               id="price-mercado"
-              value={mercado}
-              onChange={e => setMercado(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
+              {...register('mercado')}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
             >
               {mercados.map(m => <option key={m}>{m}</option>)}
             </select>
+            {errors.mercado && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.mercado.message}</p>}
           </div>
 
           <div className="sm:col-span-2">
             {/* Botón primario */}
             <button
               type="submit"
-              disabled={submitting}
+              disabled={isSubmitting}
               className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
             >
-              {submitting
+              {isSubmitting
                 ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Registrando...</span></>
                 : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Registrar Precio</span></>
               }
