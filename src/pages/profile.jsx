@@ -2,26 +2,37 @@ import { useState, useEffect } from 'react';
 import { useAuth, signOut } from '../js/auth';
 import { supabase } from '../js/supabase';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, Loader2, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
+import { UserCircle, Loader2, CheckCircle, AlertCircle, LogOut, Star } from 'lucide-react';
+import { SkeletonForm } from '../components/Skeleton';
+
+const CULTIVOS_DISPONIBLES = ['Papa', 'Cebolla', 'Maíz', 'Arroz', 'Espárrago', 'Caña de azúcar', 'Tomate', 'Zanahoria', 'Lechuga', 'Ají'];
 
 export default function Profile() {
-  const { session, profile } = useAuth();
+  const { session, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   const [nombre, setNombre] = useState('');
   const [region, setRegion] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [favoritos, setFavoritos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
-  const [msgType, setMsgType] = useState(''); // 'ok' | 'error'
+  const [msgType, setMsgType] = useState('');
 
   useEffect(() => {
     if (profile) {
       setNombre(profile.nombre || '');
       setRegion(profile.region || '');
       setTelefono(profile.telefono || '');
+      setFavoritos(profile.cultivos_favoritos || []);
     }
   }, [profile]);
+
+  const toggleFavorito = (cultivo) => {
+    setFavoritos(prev =>
+      prev.includes(cultivo) ? prev.filter(c => c !== cultivo) : [...prev, cultivo]
+    );
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -31,7 +42,7 @@ export default function Profile() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ nombre, region, telefono })
+        .update({ nombre, region, telefono, cultivos_favoritos: favoritos })
         .eq('id', session.user.id);
 
       if (error) throw error;
@@ -52,6 +63,12 @@ export default function Profile() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 pb-10">
+      {authLoading ? (
+        <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+          <SkeletonForm />
+        </div>
+      ) : (
+      <>
       {/* Encabezado */}
       <header className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-agro-light border-2 border-agro-primary/20 mb-3">
@@ -126,6 +143,36 @@ export default function Profile() {
             />
           </div>
 
+          <fieldset>
+            <legend className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+              <Star className="h-4 w-4 text-amber-500" aria-hidden="true" />
+              <span>Cultivos Favoritos</span>
+              <span className="font-normal text-slate-400 text-xs">(se muestran primero en precios y dashboard)</span>
+            </legend>
+            <div className="grid grid-cols-2 gap-2.5">
+              {CULTIVOS_DISPONIBLES.map(cultivo => (
+                <label
+                  key={cultivo}
+                  htmlFor={`fav-${cultivo}`}
+                  className={`flex items-center gap-2.5 text-sm font-semibold px-3 py-2.5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    favoritos.includes(cultivo)
+                      ? 'bg-amber-50 border-amber-400 text-amber-900'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-amber-300/50'
+                  }`}
+                >
+                  <input
+                    id={`fav-${cultivo}`}
+                    type="checkbox"
+                    checked={favoritos.includes(cultivo)}
+                    onChange={() => toggleFavorito(cultivo)}
+                    className="rounded text-amber-500 focus:ring-amber-400 accent-amber-500 w-4 h-4"
+                  />
+                  {cultivo}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           {/* Botón primario */}
           <button
             type="submit"
@@ -143,11 +190,13 @@ export default function Profile() {
       {/* Botón secundario — Cerrar sesión */}
       <button
         onClick={handleSignOut}
-        className="w-full flex items-center justify-center gap-2.5 bg-white text-red-600 font-bold py-3.5 rounded-xl border-2 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 shadow-sm active:scale-[0.98]"
+        className="w-full flex items-center justify-center gap-2.5 bg-white dark:bg-slate-800 text-red-600 font-bold py-3.5 rounded-xl border-2 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 shadow-sm active:scale-[0.98]"
       >
         <LogOut className="h-5 w-5" aria-hidden="true" />
         <span>Cerrar Sesión</span>
       </button>
+      </>
+      )}
     </div>
   );
 }

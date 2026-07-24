@@ -22,10 +22,18 @@ export default function Dashboard() {
         .from('precios')
         .select('*, cultivos(nombre)')
         .order('fecha', { ascending: false })
-        .limit(6);
+        .limit(20);
       
       if (preciosError) throw preciosError;
-      setPrecios(preciosData || []);
+      // Ordenar: cultivos favoritos primero, luego por fecha
+      const favoritos = profile?.cultivos_favoritos || [];
+      const preciosOrdenados = (preciosData || []).sort((a, b) => {
+        const aFav = favoritos.includes(a.cultivos?.nombre) ? 0 : 1;
+        const bFav = favoritos.includes(b.cultivos?.nombre) ? 0 : 1;
+        if (aFav !== bFav) return aFav - bFav;
+        return new Date(b.fecha) - new Date(a.fecha);
+      }).slice(0, 6);
+      setPrecios(preciosOrdenados);
 
       // Cargar alertas activas (max 3)
       const { data: alertasData, error: alertasError } = await supabase
@@ -67,7 +75,7 @@ export default function Dashboard() {
         <h1 className="text-3xl font-extrabold text-agro-dark tracking-tight">
           Hola, {profile?.nombre || 'Agricultor'}
         </h1>
-        <p className="text-slate-600 mt-1">Aquí tienes el resumen del mercado para hoy en La Libertad.</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-1">Aquí tienes el resumen del mercado para hoy en La Libertad.</p>
       </header>
 
       {loading ? (

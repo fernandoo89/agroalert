@@ -15,7 +15,7 @@ export default function Layout() {
   const shouldHideFooter = hideFooterRoutes.includes(location.pathname);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
         <Outlet />

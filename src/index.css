@@ -82,3 +82,36 @@
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* Reglas globales para corregir colores en modo oscuro sin tener que editar cada archivo */
+.dark [class*="text-slate-900"],
+.dark [class*="text-slate-800"],
+.dark [class*="text-slate-700"],
+.dark [class*="text-gray-900"],
+.dark [class*="text-gray-800"] {
+  @apply text-slate-200 !important;
+}
+
+.dark [class*="text-slate-600"],
+.dark [class*="text-slate-500"],
+.dark [class*="text-gray-700"],
+.dark [class*="text-gray-600"],
+.dark [class*="text-gray-500"] {
+  @apply text-slate-300 !important;
+}
+
+/* Corregir fondos claros fijos y bordes en modo oscuro */
+.dark [class*="bg-white"]:not([class*="dark:bg-transparent"]),
+.dark [class*="bg-slate-50"] {
+  @apply bg-slate-800 !important;
+}
+
+.dark [class*="border-slate-200"],
+.dark [class*="border-slate-100"] {
+  @apply border-slate-700 !important;
+}
+
+/* Asegurar que el color primario mantenga su visibilidad o destaque adecuadamente si es necesario */
+.dark .text-agro-primary {
+  @apply text-emerald-400 !important;
+}

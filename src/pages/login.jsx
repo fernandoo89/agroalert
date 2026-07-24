@@ -21,6 +21,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const returnTo = new URLSearchParams(location.search).get('returnTo') || '/dashboard';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
@@ -51,7 +53,7 @@ export default function Login() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate('/dashboard');
+        navigate(returnTo, { replace: true });
       } else {
         if (!nombre.trim()) throw new Error('Por favor ingresa tu nombre completo.');
         if (cultivos.length === 0) throw new Error('Selecciona al menos un cultivo principal.');
@@ -69,7 +71,7 @@ export default function Login() {
           cantidad_cultivos: cultivos.length 
         }));
         
-        navigate('/dashboard');
+        navigate(returnTo, { replace: true });
       }
     } catch (err) {
       setErrorMsg(err.message || 'Ocurrió un error inesperado. Inténtalo de nuevo.');

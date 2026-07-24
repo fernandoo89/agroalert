@@ -153,13 +153,13 @@ export default function Navbar() {
               /* Botones públicas de sesión */
               <div className="flex items-center gap-3">
                 <Link 
-                  to="/login?mode=login" 
+                  to={`/login?mode=login&returnTo=${encodeURIComponent(location.pathname)}`} 
                   className="px-4 py-2 text-sm font-bold text-slate-200 hover:text-white transition-colors"
                 >
                   Iniciar sesión
                 </Link>
                 <Link 
-                  to="/login?mode=register" 
+                  to={`/login?mode=register&returnTo=${encodeURIComponent(location.pathname)}`} 
                   className="px-5 py-2.5 text-sm font-bold bg-white text-agro-dark hover:bg-slate-100 rounded-xl transition-all duration-200 shadow-sm border border-white/10 active:scale-95"
                 >
                   Registrarse
@@ -255,14 +255,14 @@ export default function Navbar() {
             ) : (
               <div className="grid grid-cols-2 gap-2 p-2">
                 <Link 
-                  to="/login?mode=login" 
+                  to={`/login?mode=login&returnTo=${encodeURIComponent(location.pathname)}`} 
                   onClick={() => setMenuOpen(false)}
                   className="text-center py-2.5 rounded-xl text-sm font-bold hover:bg-white/5 text-slate-200 border border-slate-700/60"
                 >
                   Iniciar sesión
                 </Link>
                 <Link 
-                  to="/login?mode=register" 
+                  to={`/login?mode=register&returnTo=${encodeURIComponent(location.pathname)}`} 
                   onClick={() => setMenuOpen(false)}
                   className="text-center py-2.5 rounded-xl text-sm font-bold bg-white text-agro-dark"
                 >

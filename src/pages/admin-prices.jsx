@@ -5,6 +5,7 @@ import { Trash2, Plus, Loader2, CheckCircle, AlertCircle, Inbox } from 'lucide-r
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import Pagination from '../components/Pagination';
 
 const priceSchema = z.object({
   cultivoId: z.string().min(1, 'Selecciona un cultivo'),
@@ -19,7 +20,9 @@ export default function AdminPrices() {
   const [ultimosPrecios, setUltimosPrecios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
-  const [msgType, setMsgType] = useState(''); // 'ok' | 'error'
+  const [msgType, setMsgType] = useState('');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 10;
 
   const mercados = ['Mercado La Hermelinda', 'Mayorista Lima', 'Otro'];
 
@@ -97,6 +100,9 @@ export default function AdminPrices() {
   };
 
   if (!profile?.es_admin) return null;
+
+  const totalPages = Math.ceil(ultimosPrecios.length / PER_PAGE);
+  const paginatedPrecios = ultimosPrecios.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <div className="space-y-8">
@@ -188,8 +194,8 @@ export default function AdminPrices() {
       {/* Tabla últimos 20 precios */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/60">
-          <h2 className="text-xl font-bold text-slate-800">Últimos 20 Precios Cargados</h2>
-          <p className="text-sm text-slate-500 mt-1">Ordenados por fecha más reciente</p>
+          <h2 className="text-xl font-bold text-slate-800">Precios Cargados ({ultimosPrecios.length})</h2>
+          <p className="text-sm text-slate-500 mt-1">Ordenados por fecha más reciente — Página {page} de {totalPages || 1}</p>
         </div>
 
         {loading ? (
@@ -209,7 +215,7 @@ export default function AdminPrices() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {ultimosPrecios.map(p => (
+                {paginatedPrecios.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-slate-800">{p.cultivos?.nombre}</td>
                     <td className="px-6 py-4">
@@ -239,6 +245,11 @@ export default function AdminPrices() {
             <Inbox className="h-12 w-12 mx-auto mb-3 opacity-40" aria-hidden="true" />
             <p className="text-base font-semibold text-slate-500">No hay precios registrados aún.</p>
             <p className="text-sm mt-1">Usa el formulario de arriba para ingresar el primer precio del día.</p>
+          </div>
+        )}
+        {ultimosPrecios.length > PER_PAGE && (
+          <div className="border-t border-slate-100">
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         )}
       </div>

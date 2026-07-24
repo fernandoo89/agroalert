@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
+import Pagination from '../components/Pagination';
 
 const alertSchema = z.object({
   cultivoId: z.string().min(1, 'Selecciona un cultivo'),
@@ -20,6 +21,8 @@ export default function AdminAlerts() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('');
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 10;
 
   const { register, handleSubmit, formState: { errors, isSubmitting, isValid }, reset, watch, setValue } = useForm({
     resolver: zodResolver(alertSchema),
@@ -123,6 +126,8 @@ export default function AdminAlerts() {
 
   if (!profile?.es_admin) return null;
 
+  const totalPages = Math.ceil(alertas.length / PER_PAGE);
+  const paginatedAlertas = alertas.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const getTipoBadge = (tipo) => tiposAlerta.find(t => t.value === tipo) || tiposAlerta[0];
 
   return (
@@ -218,7 +223,7 @@ export default function AdminAlerts() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/60">
           <h2 className="text-xl font-bold text-slate-800">Todas las Alertas ({alertas.length})</h2>
-          <p className="text-sm text-slate-500 mt-1">Las alertas activas aparecen primero</p>
+          <p className="text-sm text-slate-500 mt-1">Las alertas activas aparecen primero — Página {page} de {totalPages || 1}</p>
         </div>
 
         {loading ? (
@@ -237,7 +242,7 @@ export default function AdminAlerts() {
         ) : alertas.length > 0 ? (
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
             <AnimatePresence>
-            {alertas.map(alerta => {
+            {paginatedAlertas.map(alerta => {
               const tipoBadge = getTipoBadge(alerta.tipo);
               return (
                 <motion.div 
@@ -297,6 +302,11 @@ export default function AdminAlerts() {
             <AlertTriangle className="h-12 w-12 mx-auto mb-3 opacity-30" aria-hidden="true" />
             <p className="text-base font-semibold text-slate-500">No hay alertas creadas aún.</p>
             <p className="text-sm mt-1">Crea la primera alerta usando el formulario de arriba.</p>
+          </div>
+        )}
+        {alertas.length > PER_PAGE && (
+          <div className="border-t border-slate-100">
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         )}
       </div>

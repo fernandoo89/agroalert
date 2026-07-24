@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../js/supabase';
 import { registrarEvento } from '../js/tracking';
+import { useAuth } from '../js/auth';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertCircle, RefreshCw, Inbox, Calendar, LayoutGrid } from 'lucide-react';
+import { AlertCircle, RefreshCw, Inbox, Calendar, LayoutGrid, Download } from 'lucide-react';
 
 export default function Prices() {
+  const { profile } = useAuth();
   const [cultivos, setCultivos] = useState([]);
   const [cultivoActivo, setCultivoActivo] = useState('');
   const [dias, setDias] = useState(30);
@@ -21,8 +23,14 @@ export default function Prices() {
         const { data, error: sbError } = await supabase.from('cultivos').select('id, nombre').order('nombre');
         if (sbError) throw sbError;
         if (data && data.length > 0) {
-          setCultivos(data);
-          setCultivoActivo(data[0].id.toString());
+          const favoritos = profile?.cultivos_favoritos || [];
+          const sorted = [...data].sort((a, b) => {
+            const aFav = favoritos.includes(a.nombre) ? 0 : 1;
+            const bFav = favoritos.includes(b.nombre) ? 0 : 1;
+            return aFav - bFav;
+          });
+          setCultivos(sorted);
+          setCultivoActivo(sorted[0].id.toString());
         }
       } catch (err) {
         console.error("Error cargando cultivos:", err);
@@ -90,6 +98,23 @@ export default function Prices() {
     setTimeout(() => setCultivoActivo(active), 50);
   };
 
+  const handleExportCSV = () => {
+    if (datosGrafica.length === 0) return;
+    const cultivoNombre = cultivos.find(c => c.id.toString() === cultivoActivo.toString())?.nombre || 'cultivo';
+    const header = 'Fecha,Precio (S/ kg),Mercado\n';
+    const rows = datosGrafica.map(p =>
+      `${new Date(p.fechaRaw).toISOString().split('T')[0]},${p.precio.toFixed(2)},${p.mercado}`
+    ).join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `precios_${cultivoNombre.toLowerCase().replace(/\s+/g, '_')}_${dias}d.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    registrarEvento('historial_exportado', { cultivo: cultivoNombre, rango_dias: dias, format: 'csv' });
+  };
+
   return (
     <div className="space-y-8">
       <header>
@@ -98,7 +123,7 @@ export default function Prices() {
       </header>
 
       {/* Filtros */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-5 items-end">
+      <div className="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-wrap gap-5 items-end">
         <div className="w-full sm:w-auto">
           <label htmlFor="filter-cultivo" className="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5">
             <LayoutGrid className="h-4 w-4 text-agro-primary" aria-hidden="true" />
@@ -111,9 +136,12 @@ export default function Prices() {
             className="w-full sm:w-56 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800"
           >
             {cultivos.length === 0 && <option value="">Cargando cultivos...</option>}
-            {cultivos.map(c => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
+            {cultivos.map(c => {
+              const esFav = (profile?.cultivos_favoritos || []).includes(c.nombre);
+              return (
+                <option key={c.id} value={c.id}>{esFav ? '★ ' : ''}{c.nombre}</option>
+              );
+            })}
           </select>
         </div>
         <div className="w-full sm:w-auto">
@@ -132,6 +160,17 @@ export default function Prices() {
             <option value={60}>Últimos 60 días</option>
           </select>
         </div>
+        {datosGrafica.length > 0 && (
+          <div className="w-full sm:w-auto sm:ml-auto">
+            <button
+              onClick={handleExportCSV}
+              className="w-full sm:w-auto inline-flex items-center gap-2 bg-agro-primary hover:bg-agro-dark text-white font-bold px-5 py-2.5 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.98]"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              <span>Descargar CSV</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Sección de visualización */}
@@ -151,11 +190,11 @@ export default function Prices() {
       ) : (
         <>
           {/* Gráfica */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-[400px]">
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 h-[400px]">
             {loading ? (
               <div className="flex flex-col items-center justify-center h-full space-y-4">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-agro-primary" />
-                <span className="text-slate-500 font-semibold animate-pulse">Cargando gráfica de precios...</span>
+                <div className="h-[300px] w-full skeleton rounded-xl" />
+                <span className="text-slate-500 dark:text-slate-400 font-semibold animate-pulse">Cargando gráfica de precios...</span>
               </div>
             ) : datosGrafica.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">

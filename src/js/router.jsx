@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from './auth';
 
 import Layout from '../components/Layout';
@@ -18,8 +18,9 @@ import AdminRecommendations from '../pages/admin-recommendations';
 // Componentes de protección
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>;
-  if (!session) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (loading) return <div className="min-h-screen flex items-center justify-center dark:text-slate-100">Cargando...</div>;
+  if (!session) return <Navigate to={`/login?returnTo=${encodeURIComponent(location.pathname)}`} replace />;
   return <Outlet />;
 };
 
