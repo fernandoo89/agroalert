@@ -89,3 +89,12 @@ proyecto-agricultivo/
 3. Haz Commit de tus cambios (`git commit -m 'Añadir alguna NuevaCaracteristica'`).
 4. Haz Push a la rama (`git push origin feature/NuevaCaracteristica`).
 5. Abre un Pull Request.
+
+##  GRUPOS 8
+
+##   INTEGRANTES:
+
+1. Benites Mendoza Fernando 
+2. Huacacolqui Cruzado Leoncio
+3. Sanchez Maradiegue Joaquin
+
