@@ -2,17 +2,20 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../js/supabase';
 import { registrarEvento } from '../js/tracking';
 import { useAuth } from '../js/auth';
+import { useTheme } from '../js/ThemeContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AlertCircle, RefreshCw, Inbox, Calendar, LayoutGrid, Download } from 'lucide-react';
 
 export default function Prices() {
   const { profile } = useAuth();
+  const { theme } = useTheme();
   const [cultivos, setCultivos] = useState([]);
   const [cultivoActivo, setCultivoActivo] = useState('');
   const [dias, setDias] = useState(30);
   const [datosGrafica, setDatosGrafica] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   const lastTrackedRef = useRef('');
 
@@ -87,15 +90,12 @@ export default function Prices() {
       }
     }
     loadPrecios();
-  }, [cultivoActivo, dias]);
+  }, [cultivoActivo, dias, retryCount]);
 
   const handleRetry = () => {
     setError(null);
     setLoading(true);
-    // Forzar recarga reiniciando el filtro
-    const active = cultivoActivo;
-    setCultivoActivo('');
-    setTimeout(() => setCultivoActivo(active), 50);
+    setRetryCount(prev => prev + 1);
   };
 
   const handleExportCSV = () => {
@@ -199,13 +199,13 @@ export default function Prices() {
             ) : datosGrafica.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={datosGrafica} margin={{ top: 10, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="fecha" tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(val) => `S/ ${val.toFixed(1)}`} tick={{fontSize: 12, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? '#334155' : '#f1f5f9'} />
+                  <XAxis dataKey="fecha" tick={{fontSize: 12, fill: theme === 'dark' ? '#cbd5e1' : '#64748b'}} tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(val) => `S/ ${val.toFixed(1)}`} tick={{fontSize: 12, fill: theme === 'dark' ? '#cbd5e1' : '#64748b'}} tickLine={false} axisLine={false} />
                   <Tooltip 
                     formatter={(value) => [`S/ ${parseFloat(value).toFixed(2)}`, 'Precio Promedio']} 
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} 
-                    labelStyle={{ color: '#1e293b', fontWeight: 'bold' }} 
+                    contentStyle={{ borderRadius: '12px', border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', backgroundColor: theme === 'dark' ? '#1e293b' : '#fff' }} 
+                    labelStyle={{ color: theme === 'dark' ? '#f8fafc' : '#1e293b', fontWeight: 'bold' }} 
                   />
                   <Legend />
                   <Line 
