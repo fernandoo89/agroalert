@@ -33,7 +33,29 @@ export default function Dashboard() {
         if (aFav !== bFav) return aFav - bFav;
         return new Date(b.fecha) - new Date(a.fecha);
       }).slice(0, 6);
-      setPrecios(preciosOrdenados);
+
+      // Calcular la tendencia real consultando el último precio histórico previo para cada cultivo
+      const preciosConTendencia = await Promise.all(
+        preciosOrdenados.map(async (precio) => {
+          const { data: prevData } = await supabase
+            .from('precios')
+            .select('precio_kg')
+            .eq('cultivo_id', precio.cultivo_id)
+            .lt('fecha', precio.fecha)
+            .order('fecha', { ascending: false })
+            .limit(1);
+
+          let tendencia = 'igual';
+          if (prevData && prevData.length > 0) {
+            const precioPrev = parseFloat(prevData[0].precio_kg);
+            const precioAct = parseFloat(precio.precio_kg);
+            if (precioAct > precioPrev) tendencia = 'sube';
+            else if (precioAct < precioPrev) tendencia = 'baja';
+          }
+          return { ...precio, tendencia };
+        })
+      );
+      setPrecios(preciosConTendencia);
 
       // Cargar alertas activas (max 3)
       const { data: alertasData, error: alertasError } = await supabase
@@ -144,7 +166,7 @@ export default function Dashboard() {
                     key={p.id}
                     nombre={p.cultivos?.nombre}
                     precioActual={p.precio_kg}
-                    tendencia="sube" // Comparación simplificada para MVP
+                    tendencia={p.tendencia}
                   />
                 ))
               ) : (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../js/supabase';
 import { useAuth } from '../js/auth';
 import { TrendingUp, AlertTriangle, Lightbulb, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
   const { profile } = useAuth();
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Cargar Precios</h3>
           <p className="text-sm text-gray-600 mb-4">Registra los precios del día por cultivo y mercado. Este es el dato más importante de la plataforma.</p>
-          <a href="/admin/prices" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Precios →</a>
+          <Link to="/admin/prices" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Precios →</Link>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -151,7 +152,7 @@ export default function AdminDashboard() {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Crear Alertas</h3>
           <p className="text-sm text-gray-600 mb-4">Avisa a los agricultores sobre caídas de precio, sobreoferta o cambios importantes en el mercado.</p>
-          <a href="/admin/alerts" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Alertas →</a>
+          <Link to="/admin/alerts" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Alertas →</Link>
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -160,7 +161,7 @@ export default function AdminDashboard() {
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">Recomendaciones</h3>
           <p className="text-sm text-gray-600 mb-4">Define qué cultivos se deben sembrar o evitar según el comportamiento actual del mercado.</p>
-          <a href="/admin/recommendations" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Recomendaciones →</a>
+          <Link to="/admin/recommendations" className="text-agro-primary hover:text-agro-dark font-semibold">Ir a Recomendaciones →</Link>
         </div>
       </div>
     </div>

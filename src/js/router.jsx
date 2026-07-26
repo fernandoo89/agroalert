@@ -14,6 +14,7 @@ import AdminDashboard from '../pages/admin-dashboard';
 import AdminPrices from '../pages/admin-prices';
 import AdminAlerts from '../pages/admin-alerts';
 import AdminRecommendations from '../pages/admin-recommendations';
+import NotFound from '../pages/not-found';
 
 // Componentes de protección
 const ProtectedRoute = () => {
@@ -49,7 +50,8 @@ const router = createBrowserRouter([
           { path: 'recommendations', element: <Recommendations /> },
           { path: 'profile', element: <Profile /> },
         ]
-      }
+      },
+      { path: '*', element: <NotFound /> }
     ]
   },
 
@@ -69,6 +71,7 @@ const router = createBrowserRouter([
               { path: 'prices', element: <AdminPrices /> },
               { path: 'alerts', element: <AdminAlerts /> },
               { path: 'recommendations', element: <AdminRecommendations /> },
+              { path: '*', element: <Navigate to="/admin/dashboard" replace /> }
             ]
           }
         ]

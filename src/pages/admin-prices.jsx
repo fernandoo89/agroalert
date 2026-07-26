@@ -24,6 +24,13 @@ export default function AdminPrices() {
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
+  // Estados para Carga Rápida (Matriz)
+  const [uploadMode, setUploadMode] = useState('individual'); // 'individual' | 'bulk'
+  const [bulkPrices, setBulkPrices] = useState({});
+  const [bulkDate, setBulkDate] = useState(new Date().toISOString().split('T')[0]);
+  const [bulkMarket, setBulkMarket] = useState('Mercado La Hermelinda');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
   const mercados = ['Mercado La Hermelinda', 'Mayorista Lima', 'Otro'];
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm({
@@ -45,6 +52,13 @@ export default function AdminPrices() {
         setCultivos(cultivosData);
         if (cultivosData.length > 0)
           setValue('cultivoId', cultivosData[0].id.toString());
+        
+        // Inicializar bulkPrices con campos vacíos
+        const initialPrices = {};
+        cultivosData.forEach(c => {
+          initialPrices[c.id] = '';
+        });
+        setBulkPrices(initialPrices);
       }
       const { data: preciosData } = await supabase
         .from('precios').select('*, cultivos(nombre)')
@@ -81,6 +95,64 @@ export default function AdminPrices() {
     }
   };
 
+  const handleBulkPriceChange = (cultivoId, value) => {
+    setBulkPrices(prev => ({
+      ...prev,
+      [cultivoId]: value
+    }));
+  };
+
+  const onSubmitBulk = async (e) => {
+    e.preventDefault();
+    setMsg('');
+    setBulkSubmitting(true);
+
+    try {
+      const itemsToInsert = [];
+      for (const cultivoId in bulkPrices) {
+        const precio = bulkPrices[cultivoId];
+        if (precio && precio.trim() !== '') {
+          const numPrecio = parseFloat(precio);
+          if (isNaN(numPrecio) || numPrecio <= 0) {
+            const cultivoNombre = cultivos.find(c => c.id.toString() === cultivoId.toString())?.nombre || cultivoId;
+            throw new Error(`El precio para ${cultivoNombre} debe ser un número válido mayor a 0.`);
+          }
+          itemsToInsert.push({
+            cultivo_id: parseInt(cultivoId),
+            precio_kg: numPrecio,
+            fecha: bulkDate,
+            mercado: bulkMarket,
+            fuente: 'Admin AgroAlert',
+          });
+        }
+      }
+
+      if (itemsToInsert.length === 0) {
+        throw new Error('Ingresa al precio de al menos un cultivo para poder registrar.');
+      }
+
+      const { error } = await supabase.from('precios').insert(itemsToInsert);
+      if (error) throw error;
+
+      setMsg(`${itemsToInsert.length} precio(s) registrado(s) correctamente.`);
+      setMsgType('ok');
+
+      // Limpiar precios masivos
+      const resetBulk = {};
+      cultivos.forEach(c => {
+        resetBulk[c.id] = '';
+      });
+      setBulkPrices(resetBulk);
+
+      loadData();
+    } catch (err) {
+      setMsg('Error al guardar masivamente: ' + err.message);
+      setMsgType('error');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   const handleEliminar = async (id) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este precio?')) return;
     try {
@@ -113,7 +185,35 @@ export default function AdminPrices() {
 
       {/* Formulario */}
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-        <h2 className="text-2xl font-bold text-slate-800 mb-6">Nuevo Precio</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4 border-b border-slate-100 pb-4">
+          <h2 className="text-2xl font-bold text-slate-800">Registrar Precios</h2>
+          
+          {/* Selector de Modo */}
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-xl w-fit">
+            <button
+              type="button"
+              onClick={() => { setUploadMode('individual'); setMsg(''); }}
+              className={`px-4 py-2 font-bold text-xs rounded-lg transition-all ${
+                uploadMode === 'individual'
+                  ? 'bg-white text-agro-dark shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Registro Individual
+            </button>
+            <button
+              type="button"
+              onClick={() => { setUploadMode('bulk'); setMsg(''); }}
+              className={`px-4 py-2 font-bold text-xs rounded-lg transition-all flex items-center gap-1 ${
+                uploadMode === 'bulk'
+                  ? 'bg-white text-agro-dark shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              Carga Rápida (Lista)
+            </button>
+          </div>
+        </div>
 
         {msg && (
           <div className={`mb-6 p-4 rounded-xl text-sm border flex items-start gap-2.5 ${msgType === 'ok' ? 'bg-green-50 border-green-200 text-green-900' : 'bg-red-50 border-red-200 text-red-950'}`} role="alert" aria-live="polite">
@@ -125,70 +225,132 @@ export default function AdminPrices() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="grid sm:grid-cols-2 gap-5">
-          <div>
-            <label htmlFor="price-cultivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Cultivo</label>
-            <select
-              id="price-cultivo"
-              {...register('cultivoId')}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
-            >
-              <option value="">Selecciona un cultivo</option>
-              {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </select>
-            {errors.cultivoId && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.cultivoId.message}</p>}
-          </div>
+        {uploadMode === 'individual' ? (
+          <form onSubmit={handleSubmit(onSubmit)} className="grid sm:grid-cols-2 gap-5">
+            <div>
+              <label htmlFor="price-cultivo" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Cultivo</label>
+              <select
+                id="price-cultivo"
+                {...register('cultivoId')}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+              >
+                <option value="">Selecciona un cultivo</option>
+                {cultivos.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+              {errors.cultivoId && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.cultivoId.message}</p>}
+            </div>
 
-          <div>
-            <label htmlFor="price-precio" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Precio (S/ por kg)</label>
-            <input
-              id="price-precio"
-              type="number"
-              step="0.01"
-              {...register('precioKg')}
-              placeholder="Ej. 2.50"
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
-            />
-            {errors.precioKg && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.precioKg.message}</p>}
-          </div>
+            <div>
+              <label htmlFor="price-precio" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Precio (S/ por kg)</label>
+              <input
+                id="price-precio"
+                type="number"
+                step="0.01"
+                {...register('precioKg')}
+                placeholder="Ej. 2.50"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+              />
+              {errors.precioKg && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.precioKg.message}</p>}
+            </div>
 
-          <div>
-            <label htmlFor="price-fecha" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Fecha</label>
-            <input
-              id="price-fecha"
-              type="date"
-              {...register('fecha')}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
-            />
-            {errors.fecha && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.fecha.message}</p>}
-          </div>
+            <div>
+              <label htmlFor="price-fecha" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Fecha</label>
+              <input
+                id="price-fecha"
+                type="date"
+                {...register('fecha')}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+              />
+              {errors.fecha && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.fecha.message}</p>}
+            </div>
 
-          <div>
-            <label htmlFor="price-mercado" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Mercado</label>
-            <select
-              id="price-mercado"
-              {...register('mercado')}
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
-            >
-              {mercados.map(m => <option key={m}>{m}</option>)}
-            </select>
-            {errors.mercado && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.mercado.message}</p>}
-          </div>
+            <div>
+              <label htmlFor="price-mercado" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Mercado</label>
+              <select
+                id="price-mercado"
+                {...register('mercado')}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+              >
+                {mercados.map(m => <option key={m}>{m}</option>)}
+              </select>
+              {errors.mercado && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.mercado.message}</p>}
+            </div>
 
-          <div className="sm:col-span-2">
-            {/* Botón primario */}
+            <div className="sm:col-span-2">
+              {/* Botón primario */}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
+              >
+                {isSubmitting
+                  ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Registrando...</span></>
+                  : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Registrar Precio</span></>
+                }
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={onSubmitBulk} className="space-y-6">
+            <div className="grid sm:grid-cols-2 gap-5">
+              <div>
+                <label htmlFor="bulk-fecha" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Fecha para todos</label>
+                <input
+                  id="bulk-fecha"
+                  type="date"
+                  value={bulkDate}
+                  onChange={(e) => setBulkDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="bulk-mercado" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Mercado para todos</label>
+                <select
+                  id="bulk-mercado"
+                  value={bulkMarket}
+                  onChange={(e) => setBulkMarket(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-agro-primary outline-none transition-all font-medium text-slate-800 dark:text-slate-100"
+                >
+                  {mercados.map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="text-lg font-bold text-slate-700 mb-4">Ingrese precios de hoy:</h3>
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {cultivos.map((c) => (
+                  <div key={c.id} className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between gap-4">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{c.nombre}</span>
+                    <div className="flex items-center gap-1.5 min-w-[120px]">
+                      <span className="text-sm font-bold text-slate-400">S/</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="--"
+                        value={bulkPrices[c.id] || ''}
+                        onChange={(e) => handleBulkPriceChange(c.id, e.target.value)}
+                        className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-agro-primary outline-none transition-all font-semibold text-slate-800 dark:text-slate-100 text-right"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={bulkSubmitting}
               className="w-full bg-agro-primary hover:bg-agro-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm shadow-agro-primary/20 active:scale-[0.98]"
             >
-              {isSubmitting
-                ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Registrando...</span></>
-                : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Registrar Precio</span></>
+              {bulkSubmitting
+                ? <><Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /><span>Registrando todos...</span></>
+                : <><Plus className="h-5 w-5" aria-hidden="true" /><span>Registrar Precios de Hoy</span></>
               }
             </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
 
       {/* Tabla últimos 20 precios */}
